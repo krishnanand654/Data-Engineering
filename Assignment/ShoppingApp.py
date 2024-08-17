@@ -1,5 +1,6 @@
 import time
 
+
 print(f"\n{'-'*5}Welcome to the demo Marketplace{'-'*5}\n")
 
 #login db
@@ -9,58 +10,6 @@ admin_db={'username':'admin','password':'root'}
 #global session storage
 current_session_id = None
 user = None
-
-#user login
-def user_login():
-    username = input("Enter username: ")
-    password = input("Enter password: ")
-    if username == user_db['username'] and password == user_db['password']:
-        print(f"\n{'*'*5}Login successful as user{'*'*5}\n")
-        global current_session_id 
-        current_session_id = generate_session_id()
-        global user
-        user = 'user'
-        return True
-    else:
-        print("\n--login failed--\n")
-
-#admin login
-def admin_login():
-    username = input("Enter username: ")
-    password = input("Enter password: ")
-    if username == admin_db['username'] and password == admin_db['password']:
-        print(f"\n{'*'*5}Login successful as admin{'*'*5}\n")
-        global current_session_id 
-        current_session_id = generate_session_id()
-        global user
-        user = 'admin'
-        return True
-    else:
-        print("\n--login failed--\n")
-
-def generate_session_id():
-    return "12345"
-
-#login menu
-def login():
-    while True:
-        print(f"\n{'-'*5}Login{'-'*5}\n")
-        print("1. User Login\n2. Admin Login\n3. Exit application\n")
-        ch = input("Enter your choice: ")
-        if ch == '1':
-            status = user_login()
-            if status == True:
-                break
-        elif ch == '2':
-            status = admin_login()
-            if status == True:
-                user="admin"
-                break
-        elif ch == '3':
-            print("\nExiting application...\n")
-            break
-        else:
-            print("Invalid choice!")
 
 #Catelogs
 catalog = [
@@ -90,6 +39,7 @@ def display_cart():
     pass
 
 def add_to_cart(session_id, product_id, quantity):
+    global current_session_id
     if current_session_id == session_id:
        
         #if item already in cart
@@ -109,16 +59,19 @@ def add_to_cart(session_id, product_id, quantity):
         print("Session expired Login Again")
 
 def delete_from_cart(session_id, product_id):
+    global current_session_id
     if current_session_id == session_id:
         for item in cart:
             if item['id'] == product_id:
                 cart.remove(item)
-        print(f"\n{'-'*5}Item removed from cart successfully{'-'*5}\n")
+                print(f"\n{'-'*5}Item removed from cart successfully{'-'*5}\n")
+                return
+        else:
+            print(f"\n{'-'*5} item not found {'-'*5}\n")
+
     else:
         print("Session expired Login Again")
     
-
-
 def get_total():
     total = 0
     for item in cart:
@@ -213,63 +166,145 @@ def update_product():
                         return
                     except ValueError as e:
                         print("invalid format")
+    else:
+        print(f"\n{'!'*5} Product not found {'!'*5}\n")
+
+def delete_from_catalog():
+    product_id = input("Enter product id: ")
+    found= False
+    for item in catalog:
+        if item['id'] == product_id:
+            found = True
+    if found:
+        for item in catalog:
+            if item['id'] == product_id:
+                catalog.remove(item)
+        print(f"\n{'-'*5}Item removed from catalog successfully{'-'*5}\n")
+    else:
+        print(f"\n{'!'*5} Product not found {'!'*5}\n")
+
+#user login
+def user_login():
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+    if username == user_db['username'] and password == user_db['password']:
+        print(f"\n{'*'*5}Login successful as user{'*'*5}\n")
+        global current_session_id 
+        current_session_id = generate_session_id()
+        global user
+        user = 'user'
+        return True
+    else:
+        print("\n--login failed--\n")
+
+#admin login
+def admin_login():
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+    if username == admin_db['username'] and password == admin_db['password']:
+        print(f"\n{'*'*5}Login successful as admin{'*'*5}\n")
+        global current_session_id 
+        current_session_id = generate_session_id()
+        global user
+        user = 'admin'
+        return True
+    else:
+        print("\n--login failed--\n")
+
+def generate_session_id():
+    return "12345"
+
+#login menu
+def login():
+    global user
+    while True:
+        print(f"\n{'-'*5}Login{'-'*5}\n")
+        print("1. User Login\n2. Admin Login\n3. Exit application\n")
+        ch = input("Enter your choice: ")
+        if ch == '1':
+            status = user_login()
+            if status == True:
+                user = 'user'
+                menu()
+                break
+        elif ch == '2':
+            status = admin_login()
+            if status == True: 
+                user = 'admin'               
+                menu()
+                break
+        elif ch == '3':
+            print("\nExiting application...\n")
+            exit()
+        else:
+            print("Invalid choice!")
+
+
+def menu():
+    #User menu
+    global user
+    global current_session_id
+    if user == 'user':
+        while True:
+            print(f"\n{'*'*5}Menu{'*'*5}\n")
+            print("\n1. View Catalog\n2. Add to cart\n3. View Cart\n4. Delete the Cart\n5. Checkout\n6. Log out")
+            ch = input("Enter your choice: ")
+            if ch == '1':
+                display_catalog()
+            elif ch == '2':
+                product_id = input("Enter product_id: ")
+                #if item already in cart
+                found = False
+                for item in catalog:
+                    if item['id'] == product_id:
+                        found = True
+                if found == False:
+                    print(f"\n{'-'*5}Product not found{'-'*5}\n")
+                else:
+                    quantity = int(input("Enter the quantity: "))
+                    if add_to_cart(current_session_id, product_id,  quantity):
+                        break
+            elif ch == '3':
+                display_cart()
+            elif ch == '4':
+                product_id = input("Enter product_id: ")
+                delete_from_cart(current_session_id, product_id)
+            elif ch == '5':
+                checkout()
+            elif ch == '6':
+                print("\nLogging out...\n")
+                current_session_id = None
+                user = None
+                # break
+                login()
+            else:
+                print("Invalid Choice")
+
+    #Admin menu
+    if user == 'admin':
+        while True:
+            print(f"{'-'*5}MENU{'-'*5}")
+            print("\n1. Add new product\n2. View Catalog\n3. Update a product\n4. Delete a product\n5. Log out\n")
+            ch = int(input("Enter your choice: "))
+            if ch == 1:
+                add_products_to_catalog()
+            elif ch == 2:
+                display_catalog()
+            elif ch == 3:
+                update_product()
+            elif ch == 4:
+                delete_from_catalog()
+            elif ch == 5:
+                print("\nLogging out...\n")
+                user = None
+                # break
+                login()
+            else:
+                print("Invalid choice")
+            
+
 
 if __name__ == "__main__":
     login()
-
-#User menu
-if user == 'user':
-    while True:
-        print(f"\n{'*'*5}Menu{'*'*5}\n")
-        print("1. Add to cart\n2. View Cart\n3. Delete the Cart\n4. Checkout\n5. Log out")
-        ch = input("Enter your choice: ")
-        if ch == '1':
-            product_id = input("Enter product_id: ")
-             #if item already in cart
-            found = False
-            for item in catalog:
-                if item['id'] == product_id:
-                    found = True
-            if found == False:
-                print(f"\n{'-'*5}Product not found{'-'*5}\n")
-            else:
-                quantity = int(input("Enter the quantity: "))
-                if add_to_cart(current_session_id, product_id,  quantity):
-                    break
-        elif ch == '2':
-            display_cart()
-        elif ch == '3':
-            product_id = input("Enter product_id: ")
-            delete_from_cart(current_session_id, product_id)
-        elif ch == '4':
-            checkout()
-        elif ch == '5':
-            print("\nLogging out...\n")
-            current_session_id = None
-            login()
-        else:
-            print("Invalid Choice")
-
-#Admin menu
-if user == 'admin':
-    while True:
-        print(f"{'-'*5}MENU{'-'*5}")
-        print("\n1. Add new product\n2. View Catalog\n3. Update a product\n4. Log out\n")
-        ch = int(input("Enter your choice: "))
-        if ch == 1:
-            add_products_to_catalog()
-        elif ch == 2:
-            display_catalog()
-        elif ch == 3:
-            update_product()
-        elif ch == 4:
-            print("\nLogging out...\n")
-            login()
-        else:
-            print("Invalid choice")
-        
-        
-
-
 
 
