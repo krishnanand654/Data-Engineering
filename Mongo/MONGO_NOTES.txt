@@ -1,0 +1,36 @@
+Mongodb
+
+create database
+
+use <database_name>
+
+create collection
+
+db.createCollection("<collectionName>");
+
+create document
+
+db.products.insertOne(
+
+)
+
+Example
+db.products.insertOne({"product_id":1, "product_name": "Laptop", "category":"Electronics", "price": 57990})
+
+insert many
+
+db.products.insertMany(
+
+)
+
+Example
+db.products.insertMany([{"product_id":1, "product_name": "Laptop", "category":"Electronics", "price": 57990},
+{"product_id":2, "product_name": "SmartPhone", "category":"Electronics", "price": 79990}])
+
+-- To show documents
+
+db.<db_name>.find()
+
+example
+db.products.find()
+
