@@ -12,7 +12,6 @@ END
 
 USE taxi_db;
 
-
 CREATE TABLE trip (
     VendorID INT,
     lpep_pickup_datetime VARCHAR(50) , -- Format: MM/DD/YYYY HH:MM:SS AM/PM
@@ -37,7 +36,7 @@ CREATE TABLE trip (
 );
 
 
-DROP TABLE trip;
+-- DROP TABLE trip;
 
 BULK INSERT trip FROM 'D:/CSV/2021_Green_Taxi_Trip_Data.csv'
 WITH
@@ -47,7 +46,7 @@ WITH
 	FIRSTROW = 2 -- skip the header from records
 );
 
--- a) Shape of the Table (Number of Rows and Columns)
+-- 1) Shape of the Table (Number of Rows and Columns)
 SELECT 
 	COUNT(*) AS No_of_row
 FROM
@@ -58,7 +57,7 @@ SELECT
 FROM
 	INFORMATION_SCHEMA.columns;
 
--- b) Show Summary of Green Taxi Rides – Total Rides, Total Customers, Total Sales, 
+-- 2) Show Summary of Green Taxi Rides – Total Rides, Total Customers, Total Sales, 
 SELECT
 	SUM(
 		CASE 
@@ -70,7 +69,7 @@ SELECT
 FROM
 	trip;
 
--- c) Total Rides with Surcharge and its percentage.
+-- 3) Total Rides with Surcharge and its percentage.
 SELECT
 	SUM(
 		CASE 
@@ -85,7 +84,7 @@ SELECT
 FROM
 	trip;
 
--- d) Cumulative Sum of Total Fare Amount for Each Pickup Location
+-- 4) Cumulative Sum of Total Fare Amount for Each Pickup Location
 SELECT
 	PULocationID AS pick_up_location,
 	total_amount,
@@ -94,7 +93,7 @@ FROM
 	trip
 ORDER BY PULocationID; 
 
--- e) Which Payment Type is Most Common in Each Drop-off Location
+-- 5) Which Payment Type is Most Common in Each Drop-off Location
 SELECT
 	DOLocationID,
 	payment_type,
@@ -118,7 +117,7 @@ ORDER BY
 		DOLocationID,payment_type ASC;
 
 
--- f) Create a New Column for Trip Distance Band and Show Distribution
+-- 6) Create a New Column for Trip Distance Band and Show Distribution
 SELECT
 	trip_distance,
 	trip_distribution
@@ -134,26 +133,26 @@ WHERE
 ORDER BY 
 	trip_distance;
 
-	SELECT 
-		*
-	FROM
-		trip
 
 
--- g) Find the Most Frequent Pickup Location (Mode) with rides fare greater than average of ride fare.
 
+-- 7) Find the Most Frequent Pickup Location (Mode) with rides fare greater than average of ride fare.
 SELECT 
-	PULocationID,
-	AVG(fare_amount) AS average_amount,
-	COUNT(PULocationID) AS FREQUENCY
-FROM
-	trip
+    PULocationID,
+	(SELECT AVG(fare_amount) FROM trip ) AS average,
+    COUNT(*) AS frequency
+FROM 
+    trip
+WHERE 
+    fare_amount > (SELECT AVG(fare_amount) FROM trip)
 GROUP BY 
-	PULocationID
-ORDER BY
-	COUNT(PULocationID) DESC
+    PULocationID
+ORDER BY 
+    frequency DESC;
 
--- Show the Rate Code with the Highest Percentage of Usage
+
+
+-- 8 Show the Rate Code with the Highest Percentage of Usage
 
 SELECT
 	RateCodeID,
@@ -169,9 +168,8 @@ ORDER BY
 	Highest_Percentage DESC;
 
 
-SELECT * FROM trip;
 
--- Show Distribution of Tips, Find the Maximum Chances of Getting a Tip
+-- 9 Show Distribution of Tips, Find the Maximum Chances of Getting a Tip
 SELECT
 	tip_amount,
 	
@@ -182,7 +180,7 @@ FROM
 GROUP BY tip_amount;
 ;
 
--- Calculate the Rank of Trips Based on Fare Amount within Each Pickup Location
+-- 10 Calculate the Rank of Trips Based on Fare Amount within Each Pickup Location
 SELECT 
 	PULocationID,
 	fare_amount,
@@ -191,16 +189,20 @@ FROM
 	trip
 ORDER BY PULocationID;
 	
--- Find Top 20 Most Frequent Rides Routes. 
-SELECT
-	PULocationID,
-	DOLocationID
-FROM
-	trip
-WHERE
-	PULocationID = 25
-AND
-	DOLocationID = 228;
+-- 11 Find Top 20 Most Frequent Rides Routes. 
+
+
+SELECT 
+    PULocationID,
+    DOLocationID,
+    COUNT(*) AS Frequency
+FROM 
+    trip
+GROUP BY 
+    PULocationID,
+    DOLocationID
+ORDER BY 
+    Frequency DESC
 
 
  

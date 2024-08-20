@@ -139,6 +139,7 @@ FROM
 GROUP BY Marital_Status
 ORDER BY COUNT(Marital_Status) DESC;
 
+
 -- Insight: THe most frequent is Married 
 
 -- f) Show the Job Role with Highest Attrition Rate (Percentage)
@@ -158,7 +159,19 @@ GROUP BY
 	Job_Role;
 
 -- g) Show distribution of Employee's Promotion, Find the maximum chances of employee getting promoted.
+SELECT
+	Years_Since_Last_Promotion,
+	Attrition,
+	AVG(Job_Involvement) AS Job_Involvement,
+	AVG(Performance_rating) AS avg_performance_rating,
+	AVG(Relationship_satisfaction) AS avg_relationship_satisfaction,
+	COUNT(*) AS no_of_employees
+FROM
+	EmployeeData
+GROUP BY Years_Since_Last_Promotion,Attrition
+ORDER BY Years_Since_Last_Promotion ASC;
 
+-- insight : if attrition is no there is higher chance of getting promoted
 
 -- h) Show the cumulative sum of total working years for each department.
 
