@@ -165,6 +165,7 @@ SELECT
 	AVG(Job_Involvement) AS Job_Involvement,
 	AVG(Performance_rating) AS avg_performance_rating,
 	AVG(Relationship_satisfaction) AS avg_relationship_satisfaction,
+
 	COUNT(*) AS no_of_employees
 FROM
 	EmployeeData
@@ -249,12 +250,15 @@ GROUP BY Department;
 SELECT
     Marital_Status,
     SUM(CASE WHEN Attrition = 'Yes' THEN 1 ELSE 0 END) AS Attrition_Yes,
-    SUM(CASE WHEN Attrition = 'No' THEN 1 ELSE 0 END) AS Attrition_No
+	COUNT(*) AS Total,
+	SUM(CASE WHEN Attrition = 'Yes' THEN 1 ELSE 0 END)*100/COUNT(*) as attrition_percent
 FROM
     EmployeeData
 GROUP BY
     Marital_Status
-ORDER BY Attrition_Yes;
+ORDER BY attrition_percent DESC;
+
+--Insight: Singles have more attrition rate followed by Married and Divorced
 
 -- n) Show the Department with Highest Attrition Rate (Percentage)
 SELECT
@@ -270,14 +274,16 @@ SELECT
 FROM
 	EmployeeData
 GROUP BY 
-	Department;
+	Department
+ORDER BY 
+	Attrition_Percentage DESC;
 
 -- o) Calculate the moving average of monthly income over the past 3 employees for each job  role.
 SELECT
     Job_Role,
     Employee_Number,
     Monthly_Income,
-    AVG(Monthly_Income) OVER (PARTITION BY Job_Role ORDER BY Employee_Number ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS Moving_Avg_Income
+    AVG(Monthly_Income) OVER (PARTITION BY Job_Role ORDER BY Employee_Number ROWS BETWEEN 3 PRECEDING AND CURRENT ROW) AS Moving_Avg_Income
 FROM
     EmployeeData
 ORDER BY
@@ -287,41 +293,37 @@ ORDER BY
 -- [ Condition : Monthly_Income < Q1 - (Q3 - Q1) * 1.5 OR Monthly_Income > Q3 + (Q3 - Q1) ]
 
 WITH Quartiles AS (
-    SELECT
+    SELECT 
         Job_Role,
         Monthly_Income,
-        NTILE(4) OVER (PARTITION BY Job_Role ORDER BY Monthly_Income) AS Quartile
-    FROM
+        PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY MONTHLY_INCOME) OVER (PARTITION BY job_role) AS Q1,
+        PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY MONTHLY_INCOME) OVER (PARTITION BY job_role) AS Q3
+    FROM 
         EmployeeData
 ),
-Q1ANDQ3 AS (
-    SELECT
-        Job_Role,
-        MIN(CASE WHEN Quartile = 1 THEN Monthly_Income END) AS Q1,
-        MIN(CASE WHEN Quartile = 3 THEN Monthly_Income END) AS Q3
-    FROM
+Outliers AS (
+    SELECT 
+        job_role,
+        Monthly_Income,
+        Q1,
+        Q3,
+        (Q3 - Q1) AS IQR,
+        CASE 
+            WHEN Monthly_Income < Q1 - (1.5 * (Q3 - Q1)) THEN Monthly_Income
+            WHEN Monthly_Income > Q3 + (1.5 * (Q3 - Q1)) THEN Monthly_Income
+            ELSE NULL
+        END AS Outlier_Value
+    FROM 
         Quartiles
-    GROUP BY
-        Job_Role
 )
-SELECT
-    e.Job_Role,
-    e.Employee_Number,
-    e.Monthly_Income,
-    Q1,
-    Q3,
-    (Q3 - Q1) AS IQR,
-    (Q1 - (Q3 - Q1) * 1.5) AS Left_Outlier,
-    (Q3 + (Q3 - Q1)) AS Right_Outlier
-FROM
-    EmployeeData e
-JOIN
-    Q1ANDQ3  ON e.Job_Role = Q1ANDQ3.Job_Role
-WHERE
-    e.Monthly_Income < Q1 - (Q3 - Q1) * 1.5
-    OR e.Monthly_Income > Q3 + (Q3 - Q1)
-ORDER BY
-    e.Job_Role, e.Employee_Number;
+SELECT 
+    job_role,
+    Outlier_Value
+FROM 
+    Outliers
+WHERE 
+    Outlier_Value >=0;
+
 
 -- q) Gender distribution within each job role, show each job role with its gender domination.  [Male_Domination or Female_Domination] 
 WITH GenderCTE AS(
@@ -349,6 +351,8 @@ WHERE
 ORDER BY 
 	Job_Role, Gender ASC;
 
+--Insight Male is the most dominant in every department
+
 -- r) Percent rank of employees based on training times last year
 
 SELECT
@@ -359,6 +363,8 @@ FROM
     EmployeeData
 ORDER BY
     Percent_Rank;
+
+--Insight: The person with most training in last year has the higher percent rank
 
 -- s) Divide employees into 5 groups based on training times last year [Use NTILE ()]
 WITH groupCTE AS(
@@ -463,8 +469,12 @@ SELECT
 	AVG(Job_Satisfaction) AS avg_job_satisfaction,
 	AVG(Monthly_Income) AS avg_monthly_income,
 	AVG(Environment_Satisfaction) AS avg_env_satisfaction,
+	AVG(Work_Life_Balance) AS avg_work_life_balance,
 	SUM(CASE WHEN Attrition = 'Yes' THEN 1 ELSE 0 END) AS Attrition_Yes_count,
 	(SUM(CASE WHEN Attrition = 'Yes' THEN 1 ELSE 0 END)*100.0/COUNT(Attrition)) AS Attrition_Yes_Percentage
 FROM
 	EmployeeData
 GROUP BY Department, Job_Role
+
+--Insight: From the above query, It is came to know that the avg_monthly_income is affecting the attrition
+-- more the average salary in each department lesser the attrition rate
