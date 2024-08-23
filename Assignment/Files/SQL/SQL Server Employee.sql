@@ -283,7 +283,7 @@ SELECT
     Job_Role,
     Employee_Number,
     Monthly_Income,
-    AVG(Monthly_Income) OVER (PARTITION BY Job_Role ORDER BY Employee_Number ROWS BETWEEN 3 PRECEDING AND CURRENT ROW) AS Moving_Avg_Income
+    AVG(Monthly_Income) OVER (PARTITION BY Job_Role ORDER BY Employee_Number ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS Moving_Avg_Income
 FROM
     EmployeeData
 ORDER BY
@@ -329,7 +329,7 @@ WHERE
 WITH GenderCTE AS(
 	SELECT
 		Job_Role,
-		Gender,
+		Gender AS Domination,
 		COUNT(Gender) AS Gender_count,
 		DENSE_RANK() OVER(PARTITION BY Job_Role ORDER BY Gender) AS gender_rank
 	FROM
@@ -339,17 +339,13 @@ WITH GenderCTE AS(
 )
 SELECT 
 	Job_Role,
-
-	CASE
-		WHEN gender_rank = 2 THEN 'Male_Domination'
-		ELSE 'Female_Domination'
-	END AS Domination
+	Domination
 FROM 
 	GenderCTE
 WHERE 
 	gender_rank = 2
 ORDER BY 
-	Job_Role, Gender ASC;
+	Job_Role, Domination ASC;
 
 --Insight Male is the most dominant in every department
 
