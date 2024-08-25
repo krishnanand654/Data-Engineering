@@ -132,6 +132,7 @@ FROM
 
 
 SELECT
+	Top(1)
 	Marital_Status,
 	COUNT(Marital_Status) AS Most_Frequent
 FROM
@@ -159,18 +160,45 @@ GROUP BY
 	Job_Role;
 
 -- g) Show distribution of Employee's Promotion, Find the maximum chances of employee getting promoted.
-SELECT
-	Years_Since_Last_Promotion,
-	Attrition,
-	AVG(Job_Involvement) AS Job_Involvement,
-	AVG(Performance_rating) AS avg_performance_rating,
-	AVG(Relationship_satisfaction) AS avg_relationship_satisfaction,
 
-	COUNT(*) AS no_of_employees
+-- above average of the metrics can have a higher possibility of getting promoted
+WITH Tablecte AS (
+    SELECT
+        Years_Since_Last_Promotion,
+		Department, 
+        SUM(CASE WHEN Over_Time = 'Yes' THEN 1 ELSE 0 END) AS Total_Over_Time,
+        AVG(Job_Involvement) AS Job_Involvement, 
+        AVG(Performance_rating) AS avg_performance_rating,
+        AVG(Relationship_satisfaction) AS avg_relationship_satisfaction,
+        SUM(CASE WHEN Over_Time = 'Yes' THEN 1 ELSE 0 END) + 
+        AVG(Job_Involvement) + 
+        AVG(Performance_rating) + 
+        AVG(Relationship_satisfaction) AS total
+    FROM
+        EmployeeData
+    WHERE
+        Years_Since_Last_Promotion > 0
+    GROUP BY 
+        Years_Since_Last_Promotion, Department
+),
+AvgTotal AS (
+    SELECT
+        AVG(total) AS avg_total
+    FROM
+        Tablecte
+)
+SELECT
+	Department,
+    total total_metrics,
+    avg_total,
+    CASE
+        WHEN total > avg_total THEN 'Higher Chance' ELSE 'Less Chance'
+    END AS chance_for_promotion
 FROM
-	EmployeeData
-GROUP BY Years_Since_Last_Promotion,Attrition
-ORDER BY Years_Since_Last_Promotion ASC;
+    Tablecte, AvgTotal
+ORDER BY
+    Department;
+
 
 -- insight : if attrition is no there is higher chance of getting promoted
 
@@ -245,13 +273,13 @@ WHERE
 	CF_current_Employee = 0
 GROUP BY Department;
 
--- m) Find the if there is any relation between Attrition Rate and Marital Status of Employee.
+-- m) Find if there is any relation between Attrition Rate and Marital Status of Employee.
 
 SELECT
     Marital_Status,
     SUM(CASE WHEN Attrition = 'Yes' THEN 1 ELSE 0 END) AS Attrition_Yes,
 	COUNT(*) AS Total,
-	SUM(CASE WHEN Attrition = 'Yes' THEN 1 ELSE 0 END)*100/COUNT(*) as attrition_percent
+	SUM(CASE WHEN Attrition = 'Yes' THEN 1 ELSE 0 END)*100.0/COUNT(*) as attrition_percent
 FROM
     EmployeeData
 GROUP BY
@@ -456,21 +484,26 @@ SELECT
 	NTILE(3) OVER(ORDER BY Stock_Option_Level) AS SOL_dist
 FROM
 	EmployeeData) AS _
+	select * from EmployeeData;
 
 -- x) Find key reasons for Attrition in Company
-SELECT
-	Department,
-	Job_Role,
-	AVG(Distance_From_Home) AS avg_distance,
-	AVG(Job_Satisfaction) AS avg_job_satisfaction,
-	AVG(Monthly_Income) AS avg_monthly_income,
-	AVG(Environment_Satisfaction) AS avg_env_satisfaction,
-	AVG(Work_Life_Balance) AS avg_work_life_balance,
-	SUM(CASE WHEN Attrition = 'Yes' THEN 1 ELSE 0 END) AS Attrition_Yes_count,
-	(SUM(CASE WHEN Attrition = 'Yes' THEN 1 ELSE 0 END)*100.0/COUNT(Attrition)) AS Attrition_Yes_Percentage
+SELECT 
+	Attrition,
+	SUM(CASE WHEN Marital_Status = 'Single' THEN 1 ELSE 0 END) AS Single_avg ,
+	SUM(CASE WHEN Marital_Status = 'Married' THEN 1 ELSE 0 END) AS Married_avg ,
+	SUM(CASE WHEN Marital_Status = 'Divorced' THEN 1 ELSE 0 END) AS Divorced_avg , 
+	SUM(CASE WHEN Over_Time = 'Yes' THEN 1 ELSE 0 END) AS Over_time_yes_avg , 
+	SUM(CASE WHEN Over_Time = 'No' THEN 1 ELSE 0 END) AS Over_time_no_avg,
+	AVG(Distance_From_Home) as avg_dist_from_home,
+	AVG(Age) avg_age,
+	AVG(Job_Satisfaction) job_satisfaction_avg,
+	AVG(Environment_Satisfaction)
 FROM
 	EmployeeData
-GROUP BY Department, Job_Role
+GROUP BY Attrition;
+
 
 --Insight: From the above query, It is came to know that the avg_monthly_income is affecting the attrition
 -- more the average salary in each department lesser the attrition rate
+
+--categorize the question
